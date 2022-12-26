@@ -50,19 +50,19 @@ class HostScanner(object):
 
     def scan_for_reconnects(self, hosts, iprange=None):
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            scanned_hosts = []
             iprange = [str(x) for x in (self.iprange if iprange is None else iprange)]
-            for host in executor.map(self._sweep, iprange):
-                if host is not None:
-                    scanned_hosts.append(host)
-
+            scanned_hosts = [
+                host
+                for host in executor.map(self._sweep, iprange)
+                if host is not None
+            ]
             reconnected_hosts = {}
             for host in hosts:
                 for s_host in scanned_hosts:
                     if host.mac == s_host.mac and host.ip != s_host.ip:
                         s_host.name = host.name
                         reconnected_hosts[host] = s_host
-            
+
             return reconnected_hosts
 
     def _sweep(self, ip):

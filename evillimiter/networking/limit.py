@@ -28,15 +28,19 @@ class Limiter(object):
             shell.execute_suppressed('{} class add dev {} parent 1:0 classid 1:{} htb rate {r} burst {b}'.format(BIN_TC, self.interface, host_ids.upload_id, r=rate, b=rate * 1.1))
             # add a fw filter that filters packets marked with the corresponding ID
             shell.execute_suppressed('{} filter add dev {} parent 1:0 protocol ip prio {id} handle {id} fw flowid 1:{id}'.format(BIN_TC, self.interface, id=host_ids.upload_id))
-            # marks outgoing packets 
-            shell.execute_suppressed('{} -t mangle -A POSTROUTING -s {} -j MARK --set-mark {}'.format(BIN_IPTABLES, host.ip, host_ids.upload_id))
+            # marks outgoing packets
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t mangle -A POSTROUTING -s {host.ip} -j MARK --set-mark {host_ids.upload_id}'
+            )
         if (direction & Direction.INCOMING) == Direction.INCOMING:
             # add a class to the root qdisc with specified rate
             shell.execute_suppressed('{} class add dev {} parent 1:0 classid 1:{} htb rate {r} burst {b}'.format(BIN_TC, self.interface, host_ids.download_id, r=rate, b=rate * 1.1))
             # add a fw filter that filters packets marked with the corresponding ID
             shell.execute_suppressed('{} filter add dev {} parent 1:0 protocol ip prio {id} handle {id} fw flowid 1:{id}'.format(BIN_TC, self.interface, id=host_ids.download_id))
             # marks incoming packets
-            shell.execute_suppressed('{} -t mangle -A PREROUTING -d {} -j MARK --set-mark {}'.format(BIN_IPTABLES, host.ip, host_ids.download_id))
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t mangle -A PREROUTING -d {host.ip} -j MARK --set-mark {host_ids.download_id}'
+            )
 
         host.limited = True
 
@@ -48,10 +52,14 @@ class Limiter(object):
 
         if (direction & Direction.OUTGOING) == Direction.OUTGOING:
             # drops forwarded packets with matching source
-            shell.execute_suppressed('{} -t filter -A FORWARD -s {} -j DROP'.format(BIN_IPTABLES, host.ip))
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t filter -A FORWARD -s {host.ip} -j DROP'
+            )
         if (direction & Direction.INCOMING) == Direction.INCOMING:
             # drops forwarded packets with matching destination
-            shell.execute_suppressed('{} -t filter -A FORWARD -d {} -j DROP'.format(BIN_IPTABLES, host.ip))
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t filter -A FORWARD -d {host.ip} -j DROP'
+            )
 
         host.blocked = True
 
@@ -121,7 +129,7 @@ class Limiter(object):
             with self._host_dict_lock:
                 while True:
                     if id_ not in exc:
-                        v = (x for x in self._host_dict.values())
+                        v = iter(self._host_dict.values())
                         ids = (x['ids'] for x in v)
                         if id_ not in (x for y in ids for x in [y.upload_id, y.download_id]):
                             return id_
@@ -135,19 +143,31 @@ class Limiter(object):
         Deletes the tc class and applied filters
         for a given ID (host)
         """
-        shell.execute_suppressed('{} filter del dev {} parent 1:0 prio {}'.format(BIN_TC, self.interface, id_))
-        shell.execute_suppressed('{} class del dev {} parent 1:0 classid 1:{}'.format(BIN_TC, self.interface, id_))
+        shell.execute_suppressed(
+            f'{BIN_TC} filter del dev {self.interface} parent 1:0 prio {id_}'
+        )
+        shell.execute_suppressed(
+            f'{BIN_TC} class del dev {self.interface} parent 1:0 classid 1:{id_}'
+        )
 
     def _delete_iptables_entries(self, host, direction, id_):
         """
         Deletes iptables rules for a given ID (host)
         """
         if (direction & Direction.OUTGOING) == Direction.OUTGOING:
-            shell.execute_suppressed('{} -t mangle -D POSTROUTING -s {} -j MARK --set-mark {}'.format(BIN_IPTABLES, host.ip, id_))
-            shell.execute_suppressed('{} -t filter -D FORWARD -s {} -j DROP'.format(BIN_IPTABLES, host.ip))
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t mangle -D POSTROUTING -s {host.ip} -j MARK --set-mark {id_}'
+            )
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t filter -D FORWARD -s {host.ip} -j DROP'
+            )
         if (direction & Direction.INCOMING) == Direction.INCOMING:
-            shell.execute_suppressed('{} -t mangle -D PREROUTING -d {} -j MARK --set-mark {}'.format(BIN_IPTABLES, host.ip, id_))
-            shell.execute_suppressed('{} -t filter -D FORWARD -d {} -j DROP'.format(BIN_IPTABLES, host.ip))
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t mangle -D PREROUTING -d {host.ip} -j MARK --set-mark {id_}'
+            )
+            shell.execute_suppressed(
+                f'{BIN_IPTABLES} -t filter -D FORWARD -d {host.ip} -j DROP'
+            )
 
 
 class Direction:
@@ -156,12 +176,12 @@ class Direction:
     INCOMING = 2
     BOTH = 3
 
-    def pretty_direction(direction):
-        if direction == Direction.OUTGOING:
+    def pretty_direction(self):
+        if self == Direction.OUTGOING:
             return 'upload'
-        elif direction == Direction.INCOMING:
+        elif self == Direction.INCOMING:
             return 'download'
-        elif direction == Direction.BOTH:
+        elif self == Direction.BOTH:
             return 'upload / download'
         else:
             return '-'

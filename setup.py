@@ -23,17 +23,19 @@ def get_init_content():
 
 
 def get_version():
-    version_match = re.search(r'^__version__ = [\'"](\d\.\d\.\d)[\'"]', get_init_content(), re.M)
-    if version_match:
-        return version_match.group(1)
-    
+    if version_match := re.search(
+        r'^__version__ = [\'"](\d\.\d\.\d)[\'"]', get_init_content(), re.M
+    ):
+        return version_match[1]
+
     raise RuntimeError('Unable to locate version string.')
 
 def get_description():
-    desc_match = re.search(r'^__description__ = [\'"]((.)*)[\'"]', get_init_content(), re.M)
-    if desc_match:
-        return desc_match.group(1)
-    
+    if desc_match := re.search(
+        r'^__description__ = [\'"]((.)*)[\'"]', get_init_content(), re.M
+    ):
+        return desc_match[1]
+
     raise RuntimeError('Unable to locate description string.')
 
 

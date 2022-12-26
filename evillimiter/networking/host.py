@@ -19,8 +19,8 @@ class Host(object):
 
     def pretty_status(self):
         if self.limited:
-            return '{}Limited{}'.format(IO.Fore.LIGHTRED_EX, IO.Style.RESET_ALL)
+            return f'{IO.Fore.LIGHTRED_EX}Limited{IO.Style.RESET_ALL}'
         elif self.blocked:
-            return '{}Blocked{}'.format(IO.Fore.RED, IO.Style.RESET_ALL)
+            return f'{IO.Fore.RED}Blocked{IO.Style.RESET_ALL}'
         else:
             return 'Free'
