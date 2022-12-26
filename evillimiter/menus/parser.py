@@ -106,7 +106,7 @@ class CommandParser(object):
                             sp.handler(result)
 
                         return result
-            
+
             # indicates whether or not the argument has been processed
             is_arg_processed = False
 
@@ -120,7 +120,9 @@ class CommandParser(object):
                     elif cmd.type == CommandParser.CommandType.PARAMETERIZED_FLAG_COMMAND:
                         if (len(command) - 1) < (i + 1):
                             # no more command arguments to process
-                            IO.error('parameter for flag {}{}{} is missing'.format(IO.Fore.LIGHTYELLOW_EX, cmd.name, IO.Style.RESET_ALL))
+                            IO.error(
+                                f'parameter for flag {IO.Fore.LIGHTYELLOW_EX}{cmd.name}{IO.Style.RESET_ALL} is missing'
+                            )
                             return
 
                         # if parameterized flag, set value to next argument
@@ -132,7 +134,7 @@ class CommandParser(object):
 
                         is_arg_processed = True
                         break
-            
+
             if not is_arg_processed:
                 for cmd in self._parameter_commands:
                     # parameter command, since a flag could not be found
@@ -143,20 +145,26 @@ class CommandParser(object):
                         break
 
             if not is_arg_processed:
-                IO.error('{}{}{} is an unknown command.'.format(IO.Fore.LIGHTYELLOW_EX, arg, IO.Style.RESET_ALL))
+                IO.error(
+                    f'{IO.Fore.LIGHTYELLOW_EX}{arg}{IO.Style.RESET_ALL} is an unknown command.'
+                )
                 return
 
         # check if there are any parameters missing
         for cmd in self._parameter_commands:
             if result_dict[cmd.name] is None:
-                IO.error('parameter {}{}{} is missing'.format(IO.Fore.LIGHTYELLOW_EX, cmd.name, IO.Style.RESET_ALL))
+                IO.error(
+                    f'parameter {IO.Fore.LIGHTYELLOW_EX}{cmd.name}{IO.Style.RESET_ALL} is missing'
+                )
                 return
 
         # set unspecified flags to False instead of None
         for cmd in self._flag_commands:
-            if cmd.type == CommandParser.CommandType.FLAG_COMMAND:
-                if result_dict[cmd.name] is None:
-                    result_dict[cmd.name] = False
+            if (
+                cmd.type == CommandParser.CommandType.FLAG_COMMAND
+                and result_dict[cmd.name] is None
+            ):
+                result_dict[cmd.name] = False
 
         result_tuple = collections.namedtuple('ParseResult', sorted(result_dict))
         return result_tuple(**result_dict)

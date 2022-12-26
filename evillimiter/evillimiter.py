@@ -21,18 +21,20 @@ def get_init_content():
 
 
 def get_version():
-    version_match = re.search(r'^__version__ = [\'"](\d\.\d\.\d)[\'"]', get_init_content(), re.M)
-    if version_match:
-        return version_match.group(1)
-    
+    if version_match := re.search(
+        r'^__version__ = [\'"](\d\.\d\.\d)[\'"]', get_init_content(), re.M
+    ):
+        return version_match[1]
+
     raise RuntimeError('Unable to locate version string.')
 
 
 def get_description():
-    desc_match = re.search(r'^__description__ = [\'"]((.)*)[\'"]', get_init_content(), re.M)
-    if desc_match:
-        return desc_match.group(1)
-    
+    if desc_match := re.search(
+        r'^__description__ = [\'"]((.)*)[\'"]', get_init_content(), re.M
+    ):
+        return desc_match[1]
+
     raise RuntimeError('Unable to locate description string.')
 
 
@@ -74,10 +76,12 @@ def process_arguments(args):
     else:
         interface = args.interface
         if not netutils.exists_interface(interface):
-            IO.error('interface {}{}{} does not exist.'.format(IO.Fore.LIGHTYELLOW_EX, interface, IO.Style.RESET_ALL))
+            IO.error(
+                f'interface {IO.Fore.LIGHTYELLOW_EX}{interface}{IO.Style.RESET_ALL} does not exist.'
+            )
             return
 
-    IO.ok('interface: {}{}{}'.format(IO.Fore.LIGHTYELLOW_EX, interface, IO.Style.RESET_ALL))
+    IO.ok(f'interface: {IO.Fore.LIGHTYELLOW_EX}{interface}{IO.Style.RESET_ALL}')
 
     if args.gateway_ip is None:
         gateway_ip = netutils.get_default_gateway()
@@ -87,21 +91,22 @@ def process_arguments(args):
     else:
         gateway_ip = args.gateway_ip
 
-    IO.ok('gateway ip: {}{}{}'.format(IO.Fore.LIGHTYELLOW_EX, gateway_ip, IO.Style.RESET_ALL))
+    IO.ok(f'gateway ip: {IO.Fore.LIGHTYELLOW_EX}{gateway_ip}{IO.Style.RESET_ALL}')
 
     if args.gateway_mac is None:
         gateway_mac = netutils.get_mac_by_ip(interface, gateway_ip)
         if gateway_mac is None:
             IO.error('gateway mac address could not be resolved.')
             return
+    elif netutils.validate_mac_address(args.gateway_mac):
+        gateway_mac = args.gateway_mac.lower()
     else:
-        if netutils.validate_mac_address(args.gateway_mac):
-            gateway_mac = args.gateway_mac.lower()
-        else:
-            IO.error('gateway mac is invalid.')
-            return
+        IO.error('gateway mac is invalid.')
+        return
 
-    IO.ok('gateway mac: {}{}{}'.format(IO.Fore.LIGHTYELLOW_EX, gateway_mac, IO.Style.RESET_ALL))
+    IO.ok(
+        f'gateway mac: {IO.Fore.LIGHTYELLOW_EX}{gateway_mac}{IO.Style.RESET_ALL}'
+    )
 
     if args.netmask is None:
         netmask = netutils.get_default_netmask(interface)
@@ -111,7 +116,7 @@ def process_arguments(args):
     else:
         netmask = args.netmask
 
-    IO.ok('netmask: {}{}{}'.format(IO.Fore.LIGHTYELLOW_EX, netmask, IO.Style.RESET_ALL))
+    IO.ok(f'netmask: {IO.Fore.LIGHTYELLOW_EX}{netmask}{IO.Style.RESET_ALL}')
 
     if args.flush:
         netutils.flush_network_settings(interface)
